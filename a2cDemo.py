@@ -68,6 +68,7 @@ def optimize():
             # print(value)
             pi = policy[0].detach().numpy()
             action = np.random.choice(num_outputs, p=pi)
+            # print(type(action))
 
             state, reward, done, info = env.step(action)
             entropy = -torch.sum(policy[0] * torch.log(policy[0]))
