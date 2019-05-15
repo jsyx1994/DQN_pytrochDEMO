@@ -17,7 +17,7 @@ import torchvision.transforms as T
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
-BATCH_SIZE = 32
+BATCH_SIZE = 128
 GAMMA = 0.999
 EPS_START = 0.9
 EPS_END = 0.05
@@ -142,13 +142,15 @@ def optimize_model():
     # print(np.asarray(batch.state))
     # print(batch.action)
     state_batch = np.asarray(batch.state)
-    # action_batch = torch.Tensor(batch.action)
+    action_batch = torch.LongTensor(batch.action).unsqueeze(1)
     reward_batch = torch.Tensor(batch.reward)
 
     # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
     # columns of actions taken. These are the actions which would've been taken
     # for each batch state according to policy_net
-    state_action_values = policy_net.forward(state_batch)
+    # print(action_batch.size())
+    # print(policy_net.forward(state_batch).squeeze(0).size())
+    state_action_values = policy_net.forward(state_batch).squeeze(0).gather(1, action_batch)
     # print(state_action_values)
 
     # Compute V(s_{t+1}) for all next states.
@@ -169,8 +171,8 @@ def optimize_model():
     # Optimize the model
     optimizer.zero_grad()
     loss.backward()
-    for param in policy_net.parameters():
-        param.grad.data.clamp_(-1, 1)
+    # for param in policy_net.parameters():
+    #     param.grad.data.clamp_(-1, 1)
     optimizer.step()
 
 num_episodes = 5000
