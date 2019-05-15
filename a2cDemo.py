@@ -29,7 +29,7 @@ class ActorCritic(nn.Module):
         # print(state.size())
         base = F.relu(self.shared(state))
 
-        value = F.relu(self.critic_linear(base))
+        value = self.critic_linear(base)
 
         policy_dist = self.actor_linear1(base)
         policy_dist = F.softmax(self.actor_linear2(policy_dist), dim=1)
@@ -51,7 +51,7 @@ def optimize():
     num_inputs = env.observation_space.shape[0]
     num_outputs = env.action_space.n
     net = ActorCritic(num_inputs, num_outputs, hidden_size)
-    optimizer = optim.Adam(net.parameters(), 1e-4)
+    optimizer = optim.Adam(net.parameters(), 1e-3)
 
     # optimizer =
     for episode in range(episodes):
@@ -65,6 +65,7 @@ def optimize():
         while not done:
             # env.render()
             value, policy = net.forward(state)
+            # print(value)
             pi = policy[0].detach().numpy()
             action = np.random.choice(num_outputs, p=pi)
 
@@ -80,6 +81,7 @@ def optimize():
         returns = torch.Tensor(calc_returns(rewards_entropy))
         baselines = torch.Tensor(baselines)
         adv = returns - baselines
+        # print(baselines)
         log_pi_sa = torch.stack(log_pi_sa)
         # print(log_pi_sa)
 
@@ -92,7 +94,7 @@ def optimize():
         ac_loss.backward()
         optimizer.step()
         if episode % 10 == 0:
-            print(episode // 10, sum(rewards_entropy))
+            print(episode // 10, sum(rewards_entropy), sum(rewards))
 
     state = env.reset()
     done = False
