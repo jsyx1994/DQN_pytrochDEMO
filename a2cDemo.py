@@ -47,7 +47,7 @@ def calc_returns(rewards: list):
 
 
 def optimize():
-    env = gym.make("CartPole-v0")
+    env = gym.make("MountainCar-v0")
     num_inputs = env.observation_space.shape[0]
     num_outputs = env.action_space.n
     net = ActorCritic(num_inputs, num_outputs, hidden_size)
@@ -55,24 +55,29 @@ def optimize():
 
     # optimizer =
     for episode in range(episodes):
+        rewards_entropy = []
         rewards = []
         baselines = []
         log_pi_sa = []
-        entropys = []
+        # entropys = []
         state = env.reset()
         done = False
         while not done:
             # env.render()
             value, policy = net.forward(state)
-            action = np.random.choice(num_outputs, p=policy[0].detach().numpy())
+            pi = policy[0].detach().numpy()
+            action = np.random.choice(num_outputs, p=pi)
 
             state, reward, done, info = env.step(action)
-            # entropy = torch.sum()
+            entropy = -torch.sum(policy[0] * torch.log(policy[0]))
+            reward_entropy = reward + entropy
+
             rewards.append(reward)
+            rewards_entropy.append(reward_entropy)
             baselines.append(value)
             log_pi_sa.append(torch.log(policy[0][action]))
 
-        returns = torch.Tensor(calc_returns(rewards))
+        returns = torch.Tensor(calc_returns(rewards_entropy))
         baselines = torch.Tensor(baselines)
         adv = returns - baselines
         log_pi_sa = torch.stack(log_pi_sa)
@@ -81,6 +86,7 @@ def optimize():
         pg_loss = log_pi_sa * adv
         v_loss = F.mse_loss(baselines, returns)
 
+        # 需要加符号，因为这是我们最大化return后的导数，需要梯度上升更新。torch默认因该是为梯度下降法
         ac_loss = - pg_loss.mean() + v_loss.mean()  # + 0.001 * entropy_term
         optimizer.zero_grad()
         ac_loss.backward()
