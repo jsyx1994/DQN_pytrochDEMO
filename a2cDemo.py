@@ -91,8 +91,8 @@ def optimize():
         optimizer.zero_grad()
         ac_loss.backward()
         optimizer.step()
-        if episode % 100 == 0:
-            print(episode // 100, sum(rewards))
+        if episode % 10 == 0:
+            print(episode // 10, sum(rewards_entropy))
 
     state = env.reset()
     done = False
